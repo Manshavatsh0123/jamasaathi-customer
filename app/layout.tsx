@@ -7,16 +7,40 @@ import ReduxProvider from '@/components/providers/ReduxProvider'
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
-  title: 'Invest — Investing made simple',
-  description: 'Grow and manage your money all in one place. Trade stocks and crypto, track your portfolio and wallet.',
-  generator: 'v0.app',
+  title: {
+    default: 'BharosaSaathi — Your Trusted Financial Companion',
+    template: '%s | BharosaSaathi',
+  },
+  description:
+    'BharosaSaathi helps you manage your customer accounts, track collections, view payment records, and monitor account details securely in one place.',
+
+  applicationName: 'BharosaSaathi',
+  generator: 'Next.js',
+
+  keywords: [
+    'BharosaSaathi',
+    'customer accounts',
+    'account management',
+    'payment records',
+    'collection tracking',
+  ],
+
   icons: {
-    icon: [
-      { url: '/icon-light-32x32.png', media: '(prefers-color-scheme: light)' },
-      { url: '/icon-dark-32x32.png', media: '(prefers-color-scheme: dark)' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
-    ],
-    apple: '/apple-icon.png',
+    icon: '/images/LogoImage.png',
+    apple: '/images/LogoImage.png',
+  },
+
+  openGraph: {
+    title: 'BharosaSaathi — Your Trusted Financial Companion',
+    description:
+      'Manage your accounts, track collections, and view payment records with BharosaSaathi.',
+    siteName: 'BharosaSaathi',
+    type: 'website',
+  },
+
+  robots: {
+    index: true,
+    follow: true,
   },
 }
 
@@ -34,9 +58,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} light`}>
       <body className="bg-[#e9e9e9] font-sans text-ink antialiased">
-         <ReduxProvider>{children}</ReduxProvider>
+        <ReduxProvider>{children}</ReduxProvider>
+
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
   )
 }
+

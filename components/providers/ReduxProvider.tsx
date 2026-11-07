@@ -1,14 +1,23 @@
+
 'use client'
 
+import type { ReactNode } from 'react'
 import { Provider } from 'react-redux'
+
 import { store } from '@/lib/store'
+import SessionHydrator from './SessionHydrator'
 
 type ReduxProviderProps = {
-  children: React.ReactNode
+  children: ReactNode
 }
 
 export default function ReduxProvider({
   children,
 }: ReduxProviderProps) {
-  return <Provider store={store}>{children}</Provider>
+  return (
+    <Provider store={store}>
+      <SessionHydrator />
+      {children}
+    </Provider>
+  )
 }

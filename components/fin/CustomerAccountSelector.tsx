@@ -1,49 +1,46 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ChevronDown,
-  Wallet,
-  CalendarDays,
   Landmark,
+  CalendarDays,
   Clock3,
+  Wallet,
+  RefreshCw,
   CheckCircle2,
-  FileText,
-  ArrowUpRight,
-  ShieldCheck,
+  AlertCircle,
 } from 'lucide-react'
 
-export type CustomerAccount = {
-  id: string
-  account_number: string
-  scheme?: string | null
-  frequency: string
-  collection_amount: number
-  total_collection?: number | null
-  start_date?: string | null
-  maturity_date?: string | null
-  status?: string | null
+import {
+  useFetchCustomerAccountsQuery,
+  useFetchCustomerAccountDetailsQuery,
+} from '@/features/payments/paymentsApi'
+
+import type { CustomerAccount } from '@/features/payments/paymentsTypes'
+
+type CustomerAccountSelectorProps = {
+  onAccountChange?: (accountId: string) => void
 }
 
-type Props = {
-  accounts: CustomerAccount[]
-}
+function formatAmount(value: number | string | null | undefined) {
+  if (value == null || value === '') return '—'
 
-function formatAmount(value: number) {
+  const amount = Number(value)
+  if (!Number.isFinite(amount)) return '—'
+
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
     maximumFractionDigits: 2,
-  }).format(Number.isFinite(value) ? value : 0)
+  }).format(amount)
 }
 
 function formatDate(value?: string | null) {
   if (!value) return 'Not available'
 
-  // Avoid timezone shifts when parsing a date-only API value.
-  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value)
-  const date = dateOnly
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(value)
     ? new Date(`${value}T00:00:00`)
     : new Date(value)
 
@@ -56,89 +53,177 @@ function formatDate(value?: string | null) {
   })
 }
 
-export default function CustomerAccountSelector({
-  accounts,
-}: Props) {
-  const [selectedId, setSelectedId] = useState(
-    accounts[0]?.id ?? '',
+function formatLabel(value?: string | null) {
+  if (!value) return 'Not available'
+
+  return value
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (character) => character.toUpperCase())
+}
+
+function DetailRow({
+  label,
+  value,
+  valueClassName = '',
+}: {
+  label: string
+  value: string
+  valueClassName?: string
+}) {
+  return (
+    <div className="flex min-w-0 items-start justify-between gap-4 py-3">
+      <span className="text-xs leading-5 text-[var(--hs-text-secondary)] sm:text-sm">
+        {label}
+      </span>
+
+      <span
+        className={`max-w-[60%] break-words text-right text-xs font-semibold leading-5 text-[var(--hs-text)] sm:text-sm ${valueClassName}`}
+      >
+        {value}
+      </span>
+    </div>
   )
+}
+
+export default function CustomerAccountSelector({
+  onAccountChange,
+}: CustomerAccountSelectorProps) {
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+  } = useFetchCustomerAccountsQuery()
+
+  const accounts: CustomerAccount[] = data?.accounts ?? []
+  const [selectedId, setSelectedId] = useState('')
+
+  // Automatically select the first account when the API data arrives.
+  useEffect(() => {
+    if (!accounts.length) {
+      setSelectedId('')
+      return
+    }
+
+    setSelectedId((current) =>
+      accounts.some((account) => account.id === current)
+        ? current
+        : accounts[0].id,
+    )
+  }, [accounts])
 
   const selectedAccount =
-    accounts.find((account) => account.id === selectedId) ??
-    accounts[0]
+    accounts.find((account) => account.id === selectedId) ?? accounts[0]
 
-  if (!accounts.length) {
+  useEffect(() => {
+    onAccountChange?.(selectedAccount?.id ?? '')
+  }, [selectedAccount?.id, onAccountChange])
+
+  const {
+    data: detailsData,
+    isLoading: detailsLoading,
+    isError: detailsError,
+    refetch: refetchDetails,
+  } = useFetchCustomerAccountDetailsQuery(selectedAccount?.id ?? '', {
+    skip: !selectedAccount?.id,
+  })
+
+  if (isLoading) {
     return (
-      <section className="overflow-hidden rounded-[20px] border border-[#e4e7eb] bg-white shadow-[0_8px_28px_rgba(38,54,77,0.05)]">
-        <div className="flex items-center gap-3 border-b border-[#eef0f3] p-4 sm:p-5">
-          <div className="flex size-11 items-center justify-center rounded-2xl bg-[#fff1f1]">
-            <Landmark className="size-5 text-[#c9252d]" />
-          </div>
-
-          <div>
-            <h2 className="text-sm font-semibold text-ink">
-              My Accounts
-            </h2>
-            <p className="mt-1 text-[11px] text-sub">
-              Your collection details in one place
-            </p>
-          </div>
-        </div>
-
-        <div className="px-5 py-8 text-center">
-          <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-[#f6f7f9]">
-            <FileText className="size-6 text-[#8994a3]" />
-          </div>
-
-          <h3 className="mt-4 text-sm font-semibold text-ink">
-            No accounts available yet
-          </h3>
-
-          <p className="mx-auto mt-2 max-w-[260px] text-xs leading-5 text-sub">
-            Your accounts will appear here once they have been
-            created for you.
+      <section className="rounded-2xl border border-[var(--hs-primary-border)] bg-[var(--hs-surface)] p-5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <RefreshCw className="size-4 animate-spin text-[var(--hs-primary)]" />
+          <p className="text-sm text-[var(--hs-text-secondary)]">
+            Loading accounts...
           </p>
         </div>
       </section>
     )
   }
 
-  const status = selectedAccount?.status || 'REGISTERED'
-  const isActive = status.toUpperCase() === 'ACTIVE'
-
-  return (
-    <section className="min-w-0 overflow-hidden rounded-[20px] border border-[#e4e7eb] bg-white shadow-[0_8px_28px_rgba(38,54,77,0.05)]">
-
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#eef0f3] p-4 sm:p-5">
+  if (isError || !data?.success) {
+    return (
+      <section className="rounded-2xl border border-[var(--hs-primary-border)] bg-[var(--hs-surface)] p-5 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="flex size-11 items-center justify-center rounded-2xl bg-[#fff1f1]">
-            <Landmark className="size-5 text-[#c9252d]" />
-          </div>
+          <AlertCircle className="size-5 shrink-0 text-[var(--hs-danger)]" />
 
-          <div>
-            <h2 className="text-sm font-semibold text-ink">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-sm font-semibold text-[var(--hs-text)]">
               My Accounts
             </h2>
-
-            <p className="mt-1 text-[11px] text-sub">
-              {accounts.length} {accounts.length === 1 ? 'account' : 'accounts'} available
+            <p className="mt-1 text-xs text-[var(--hs-text-secondary)]">
+              Unable to load your accounts.
             </p>
           </div>
+
+          <button
+            type="button"
+            onClick={() => refetch()}
+            aria-label="Retry loading accounts"
+            className="flex size-9 items-center justify-center rounded-lg border border-[var(--hs-border)] text-[var(--hs-primary)] transition hover:bg-[var(--hs-primary-light)]"
+          >
+            <RefreshCw className="size-4" />
+          </button>
+        </div>
+      </section>
+    )
+  }
+
+  if (!accounts.length || !selectedAccount) {
+    return (
+      <section className="rounded-2xl border border-[var(--hs-primary-border)] bg-[var(--hs-surface)] p-6 text-center shadow-sm">
+        <Landmark className="mx-auto size-7 text-[var(--hs-primary)]" />
+        <h2 className="mt-3 text-sm font-semibold text-[var(--hs-text)]">
+          No accounts yet
+        </h2>
+        <p className="mt-1 text-xs text-[var(--hs-text-secondary)]">
+          Your registered accounts will appear here.
+        </p>
+      </section>
+    )
+  }
+
+  const status = selectedAccount.status || 'REGISTERED'
+  const isActive = status.toUpperCase() === 'ACTIVE'
+  const summary = detailsData?.summary
+
+  return (
+    <section className="min-w-0 overflow-hidden rounded-2xl border border-[var(--hs-primary-border)] bg-[var(--hs-surface)] shadow-[0_8px_28px_rgba(38,54,77,0.06)]">
+      {/* Outer header: restrained brand color */}
+      <header className="flex items-center gap-3 border-b border-[var(--hs-primary-border)] bg-[var(--hs-primary-light)]/60 px-4 py-4 sm:px-5">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--hs-primary)] text-white">
+          <Landmark className="size-5" />
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <h2 className="text-sm font-semibold text-[var(--hs-text)] sm:text-base">
+            My Accounts
+          </h2>
+          <p className="mt-1 text-xs text-[var(--hs-text-secondary)]">
+            Your account and collection details
+          </p>
         </div>
 
-        <ShieldCheck className="size-5 text-[#c9252d]" />
-      </div>
+        <span
+          className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold sm:text-xs ${
+            isActive
+              ? 'bg-[var(--hs-success-light)] text-[var(--hs-success)]'
+              : 'bg-white text-[var(--hs-text-secondary)]'
+          }`}
+        >
+          {formatLabel(status)}
+        </span>
+      </header>
 
-      {selectedAccount && (
-        <div className="p-4 sm:p-5">
-
-          {/* Account selector */}
+      <div className="p-4 sm:p-5 lg:p-6">
+        {/* Account selector */}
+        <div className="max-w-2xl">
           <label
             htmlFor="customer-account-select"
-            className="mb-2 block text-[11px] font-medium text-sub"
+            className="mb-2 block text-xs font-semibold text-[var(--hs-text-secondary)]"
           >
-            Select account to view
+            Select account
           </label>
 
           <div className="relative">
@@ -146,7 +231,7 @@ export default function CustomerAccountSelector({
               id="customer-account-select"
               value={selectedAccount.id}
               onChange={(event) => setSelectedId(event.target.value)}
-              className="h-12 w-full appearance-none rounded-xl border border-[#e4e7eb] bg-[#f8f9fb] pl-3.5 pr-10 text-xs font-semibold text-ink outline-none transition hover:border-[#c9252d]/40 focus:border-[#c9252d] focus:ring-4 focus:ring-[#c9252d]/10"
+              className="h-12 w-full appearance-none rounded-xl border border-[var(--hs-border)] bg-white px-3 pr-10 text-sm font-medium text-[var(--hs-text)] outline-none transition focus:border-[var(--hs-primary)] focus:ring-2 focus:ring-[var(--hs-primary)]/15"
             >
               {accounts.map((account) => (
                 <option key={account.id} value={account.id}>
@@ -156,157 +241,158 @@ export default function CustomerAccountSelector({
               ))}
             </select>
 
-            <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-sub" />
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[var(--hs-text-muted)]" />
           </div>
+        </div>
 
-          {/* Featured account card */}
-          <div className="relative mt-4 overflow-hidden rounded-[18px] bg-gradient-to-br from-[#c9252d] via-[#b9232b] to-[#861b25] p-4 text-white shadow-[0_10px_24px_rgba(201,37,45,0.18)] sm:p-5">
-
-            {/* Decorative background */}
-            <div className="pointer-events-none absolute -right-10 -top-12 size-40 rounded-full border-[24px] border-white/[0.06]" />
-            <div className="pointer-events-none absolute -bottom-16 right-16 size-36 rounded-full bg-white/[0.05]" />
-
-            <div className="relative flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-white/70">
-                  Account Overview
-                </p>
-
-                <h3 className="mt-2 break-words text-lg font-semibold tracking-tight">
-                  {selectedAccount.scheme || 'Savings Account'}
-                </h3>
-
-                <p className="mt-1 break-words text-[11px] text-white/75">
-                  Account No. {selectedAccount.account_number}
-                </p>
-              </div>
-
-              <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 py-1.5">
-                <span
-                  className={`size-1.5 rounded-full ${
-                    isActive ? 'bg-[#86efac]' : 'bg-white/70'
-                  }`}
-                />
-
-                <span className="text-[9px] font-medium">
-                  {status.replace(/_/g, ' ')}
-                </span>
-              </div>
-            </div>
-
-            <div className="relative mt-6 border-t border-white/15 pt-4">
-              <p className="text-[10px] text-white/70">
+        {/*
+          Laptop: two columns.
+          Mobile: stacked layout.
+          Inner content uses rows instead of individual cards.
+        */}
+        <div className="mt-5 grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
+          {/* Collection overview */}
+          <div className="min-w-0">
+            <div className="border-b border-[var(--hs-border-light)] pb-3">
+              <p className="text-xs font-medium text-[var(--hs-text-secondary)]">
                 Recorded Collection
               </p>
 
-              <div className="mt-1 flex items-end justify-between gap-2">
-                <p className="min-w-0 break-words text-[27px] font-semibold leading-tight tracking-tight sm:text-[30px]">
-                  {selectedAccount.total_collection != null
-                    ? formatAmount(selectedAccount.total_collection)
-                    : '—'}
+              <div className="mt-2 flex items-start justify-between gap-3">
+                <p className="break-words text-2xl font-bold tracking-tight text-[var(--hs-primary)] sm:text-3xl">
+                  {detailsLoading
+                    ? 'Loading...'
+                    : formatAmount(summary?.total_collection)}
                 </p>
 
-                <div className="mb-1 flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/15">
-                  <Wallet className="size-[18px]" />
-                </div>
+                <Wallet className="mt-1 size-5 shrink-0 text-[var(--hs-primary)]" />
               </div>
 
-              <p className="mt-2 text-[10px] text-white/70">
-                {selectedAccount.total_collection != null
-                  ? 'Total recorded for this account'
-                  : 'Collection total not available'}
+              <p className="mt-2 break-words text-xs text-[var(--hs-text-secondary)]">
+                {selectedAccount.scheme || 'Account'} ·{' '}
+                {selectedAccount.account_number}
               </p>
+            </div>
+
+            {detailsError && (
+              <div className="mt-3 flex items-center justify-between gap-3 border-b border-[var(--hs-border-light)] py-3">
+                <p className="text-xs text-[var(--hs-danger)]">
+                  Unable to load account details.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => refetchDetails()}
+                  className="shrink-0 text-xs font-semibold text-[var(--hs-primary)] hover:underline"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            <div className="mt-4">
+              <h3 className="text-sm font-semibold text-[var(--hs-text)]">
+                Collection Details
+              </h3>
+
+              <div className="mt-1 divide-y divide-[var(--hs-border-light)]">
+                <DetailRow
+                  label="Collection amount"
+                  value={formatAmount(selectedAccount.collection_amount)}
+                />
+
+                <DetailRow
+                  label="Collection frequency"
+                  value={formatLabel(selectedAccount.frequency)}
+                />
+
+                <DetailRow
+                  label="Previous paid"
+                  value={
+                    detailsLoading
+                      ? 'Loading...'
+                      : formatAmount(summary?.previous_paid)
+                  }
+                />
+
+                <DetailRow
+                  label="Approved collection"
+                  value={
+                    detailsLoading
+                      ? 'Loading...'
+                      : formatAmount(summary?.approved_collection)
+                  }
+                  valueClassName="text-[var(--hs-success)]"
+                />
+
+                <DetailRow
+                  label="Pending collection"
+                  value={
+                    detailsLoading
+                      ? 'Loading...'
+                      : formatAmount(summary?.pending_collection)
+                  }
+                  valueClassName="text-[var(--hs-warning)]"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Collection details */}
-          <div className="mt-4 grid grid-cols-2 gap-3">
-
-            <div className="min-w-0 rounded-[14px] border border-[#eef0f3] bg-white p-3.5 transition-colors hover:bg-[#fafbfc] sm:p-4">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-[#fff1f1]">
-                <Wallet className="size-[17px] text-[#c9252d]" />
-              </div>
-
-              <p className="mt-3 text-[10px] text-sub">
-                Collection Amount
-              </p>
-
-              <p className="mt-1 break-words text-sm font-semibold text-ink">
-                {formatAmount(selectedAccount.collection_amount)}
-              </p>
-
-              <p className="mt-1 text-[10px] text-sub">
-                {selectedAccount.frequency.toLowerCase().replace(/^./, (char) => char.toUpperCase())} collection
-              </p>
-            </div>
-
-            <div className="min-w-0 rounded-[14px] border border-[#eef0f3] bg-white p-3.5 transition-colors hover:bg-[#fafbfc] sm:p-4">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-[#eaf3ff]">
-                <Clock3 className="size-[17px] text-[#2864b4]" />
-              </div>
-
-              <p className="mt-3 text-[10px] text-sub">
-                Collection Frequency
-              </p>
-
-              <p className="mt-1 break-words text-sm font-semibold text-ink">
-                {selectedAccount.frequency}
-              </p>
-
-              <p className="mt-1 text-[10px] text-sub">
-                Scheduled frequency
-              </p>
-            </div>
-          </div>
-
-          {/* Account timeline */}
-          <div className="mt-5">
-            <div className="mb-3 flex items-center gap-2">
-              <CalendarDays className="size-4 text-[#c9252d]" />
-              <h3 className="text-xs font-semibold text-ink">
+          {/* Timeline and status */}
+          <div className="min-w-0 lg:border-l lg:border-[var(--hs-border-light)] lg:pl-6">
+            <div className="flex items-center gap-2 border-b border-[var(--hs-border-light)] pb-3">
+              <CalendarDays className="size-4 text-[var(--hs-primary)]" />
+              <h3 className="text-sm font-semibold text-[var(--hs-text)]">
                 Account Timeline
               </h3>
             </div>
 
-            <div className="relative grid grid-cols-2 gap-3">
-              <div className="min-w-0 rounded-[13px] bg-[#f8f9fb] p-3.5">
-                <div className="flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-[#2864b4]" />
-                  <p className="text-[10px] text-sub">Started on</p>
-                </div>
+            <div className="divide-y divide-[var(--hs-border-light)]">
+              <DetailRow
+                label="Account number"
+                value={selectedAccount.account_number}
+              />
 
-                <p className="mt-2 break-words text-xs font-semibold text-ink">
-                  {formatDate(selectedAccount.start_date)}
-                </p>
-              </div>
+              <DetailRow
+                label="Scheme"
+                value={selectedAccount.scheme || 'Not available'}
+              />
 
-              <div className="min-w-0 rounded-[13px] bg-[#f8f9fb] p-3.5">
-                <div className="flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-[#c9252d]" />
-                  <p className="text-[10px] text-sub">Maturity date</p>
-                </div>
+              <DetailRow
+                label="Started on"
+                value={formatDate(selectedAccount.start_date)}
+              />
 
-                <p className="mt-2 break-words text-xs font-semibold text-ink">
-                  {formatDate(selectedAccount.maturity_date)}
-                </p>
-              </div>
+              <DetailRow
+                label="Maturity date"
+                value={formatDate(selectedAccount.maturity_date)}
+              />
+
+              <DetailRow
+                label="Account status"
+                value={formatLabel(status)}
+                valueClassName={
+                  isActive ? 'text-[var(--hs-success)]' : ''
+                }
+              />
             </div>
-          </div>
 
-          {/* Footer */}
-          <div className="mt-4 flex items-center justify-between gap-2 border-t border-[#eef0f3] pt-3">
-            <div className="flex min-w-0 items-center gap-2">
-              <CheckCircle2 className="size-4 shrink-0 text-[#16834a]" />
+            <div className="mt-4 flex items-start gap-2 border-t border-[var(--hs-border-light)] pt-4">
+              {isActive ? (
+                <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[var(--hs-success)]" />
+              ) : (
+                <Clock3 className="mt-0.5 size-4 shrink-0 text-[var(--hs-text-secondary)]" />
+              )}
 
-              <p className="text-[10px] text-sub">
-                Account details at a glance
+              <p className="text-xs leading-5 text-[var(--hs-text-secondary)]">
+                {isActive
+                  ? 'This account is currently active.'
+                  : 'Check the account status for the latest information.'}
               </p>
             </div>
-
-            <ArrowUpRight className="size-4 shrink-0 text-[#8994a3]" />
           </div>
         </div>
-      )}
+      </div>
     </section>
   )
 }

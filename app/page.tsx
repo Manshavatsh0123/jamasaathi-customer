@@ -26,10 +26,7 @@ export default function OnboardingPage() {
           payment with ease. Your collection records, all in one place.
         </p>
 
-        <Link
-          href="/login"
-          className="mt-auto flex h-[52px] shrink-0 items-center justify-center rounded-[14px] bg-brand text-[13px] font-medium text-ink transition-transform active:scale-[0.98] sm:mt-8"
-        >
+        <Link href="/login" className="mt-auto flex h-[52px] shrink-0 items-center justify-center rounded-[14px] bg-brand text-[13px] font-medium text-[var(--hs-white)] transition-transform active:scale-[0.98] sm:mt-8">
           Get Started
         </Link>
       </section>

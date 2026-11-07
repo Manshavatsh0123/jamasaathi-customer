@@ -1,20 +1,22 @@
-import { configureStore } from '@reduxjs/toolkit'
-import { baseApi } from '@/lib/api/baseApi'
 
-const appReducer = (
-  state = { isReady: true },
-  _action: { type: string },
-) => state
+import { configureStore } from '@reduxjs/toolkit'
+
+import { baseApi } from '@/lib/api/baseApi'
+import authReducer from '@/features/auth/authSlice'
 
 export const store = configureStore({
   reducer: {
-    app: appReducer,
+    auth: authReducer,
     [baseApi.reducerPath]: baseApi.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(baseApi.middleware),
+
+
+  devTools: process.env.NODE_ENV !== 'production',
 })
 
 export type RootState = ReturnType<typeof store.getState>
+
 export type AppDispatch = typeof store.dispatch

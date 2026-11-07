@@ -1,23 +1,29 @@
+
 'use client'
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Bookmark, House, Presentation, ReceiptText, UserRound, WalletCards, WalletMinimal } from 'lucide-react'
+import {
+  House,
+  UserRound,
+  WalletCards,
+} from 'lucide-react'
+
 import { cn } from '@/lib/utils'
 
-const left = [
+const sideItems = [
   { href: '/home', label: 'Home', icon: House },
   { href: '/account', label: 'Accounts', icon: WalletCards },
-]
-
-const right = [
-  { href: '/payment', label: 'Payments', icon: ReceiptText },
   { href: '/profile', label: 'Profile', icon: UserRound },
 ]
 
-const sideItems = [...left, ...right, { href: '/profile', label: 'Profile', icon: UserRound }]
+type Item = (typeof sideItems)[number] & {
+  active: boolean
+}
 
-type Item = (typeof sideItems)[number] & { active: boolean }
+function isRouteActive(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
 
 function NavItem({ href, label, icon: Icon, active }: Item) {
   return (
@@ -26,11 +32,40 @@ function NavItem({ href, label, icon: Icon, active }: Item) {
       aria-label={label}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'flex size-11 items-center justify-center rounded-full transition-colors',
-        active ? 'text-ink' : 'text-[#a3a3a3] hover:text-ink',
+        'group relative flex min-w-0 flex-1 flex-col items-center justify-center',
+        'gap-1 rounded-xl px-1 py-1.5',
+        'transition-colors duration-200',
+        'focus-visible:outline-none focus-visible:ring-2',
+        'focus-visible:ring-[var(--hs-primary)]',
+        active
+          ? 'text-[var(--hs-primary)]'
+          : 'text-[var(--hs-text-muted)] hover:text-[var(--hs-primary)]',
       )}
     >
-      <Icon className="size-[22px]" strokeWidth={active ? 2.2 : 1.6} fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.9 : 0} />
+      <span
+        className={cn(
+          'flex size-8 items-center justify-center rounded-[11px]',
+          'transition-all duration-200',
+          active
+            ? 'bg-[var(--hs-primary)] text-white shadow-[0_3px_8px_rgba(201,37,45,0.18)]'
+            : 'group-hover:bg-[var(--hs-primary-light)]',
+        )}
+      >
+        <Icon
+          className="size-[19px]"
+          strokeWidth={active ? 2.3 : 1.7}
+          aria-hidden="true"
+        />
+      </span>
+
+      <span
+        className={cn(
+          'text-[10px] leading-tight',
+          active ? 'font-semibold' : 'font-medium',
+        )}
+      >
+        {label}
+      </span>
     </Link>
   )
 }
@@ -41,11 +76,21 @@ function SideItem({ href, label, icon: Icon, active }: Item) {
       href={href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'flex h-12 items-center justify-center gap-3 rounded-[14px] text-[14px] font-medium transition-colors lg:justify-start lg:px-4',
-        active ? 'bg-surface text-ink' : 'text-[#a3a3a3] hover:bg-surface/60 hover:text-ink',
+        'flex h-10 items-center justify-center gap-2.5 rounded-xl',
+        'text-[13px] font-medium transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2',
+        'focus-visible:ring-[var(--hs-primary)]',
+        'lg:justify-start lg:px-3',
+        active
+          ? 'bg-[var(--hs-surface)] text-[var(--hs-primary)] shadow-sm'
+          : 'text-[var(--hs-text-muted)] hover:bg-[var(--hs-surface)]/70 hover:text-[var(--hs-text)]',
       )}
     >
-      <Icon className="size-[20px] shrink-0" strokeWidth={active ? 2.2 : 1.6} aria-hidden="true" />
+      <Icon
+        className="size-[19px] shrink-0"
+        strokeWidth={active ? 2.2 : 1.7}
+        aria-hidden="true"
+      />
       <span className="sr-only lg:not-sr-only">{label}</span>
     </Link>
   )
@@ -53,58 +98,103 @@ function SideItem({ href, label, icon: Icon, active }: Item) {
 
 export function CenterGlyph() {
   return (
-    <svg viewBox="0 0 24 24" className="size-6" fill="none" aria-hidden="true">
-      <rect x="3.5" y="4" width="17" height="16" rx="6" stroke="currentColor" strokeWidth="2" />
+    <svg
+      viewBox="0 0 24 24"
+      className="size-5"
+      fill="none"
+      aria-hidden="true"
+    >
+      <rect
+        x="3.5"
+        y="4"
+        width="17"
+        height="16"
+        rx="6"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
       <path d="M3.5 12h17" stroke="currentColor" strokeWidth="2" />
-      <path d="M9 8h6M9 16h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path
+        d="M9 8h6M9 16h6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
   )
 }
 
 export function BottomNav() {
   const pathname = usePathname()
+
   return (
     <>
+      {/* Compact premium mobile navigation */}
       <nav
-        aria-label="Primary"
-        className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] bg-white pb-[max(env(safe-area-inset-bottom),12px)] pt-2 shadow-[0_-8px_24px_rgba(0,0,0,0.04)] md:hidden"
+        aria-label="Primary navigation"
+        className={cn(
+          'fixed inset-x-3 bottom-2 z-40 mx-auto max-w-[390px] md:hidden',
+          'rounded-[19px] border border-[var(--hs-border-light)]',
+          'bg-[var(--hs-surface)]/95 px-2 py-1.5',
+          'pb-[max(6px,env(safe-area-inset-bottom))]',
+          'shadow-[0_4px_22px_rgba(15,23,42,0.09)]',
+          'backdrop-blur-xl',
+        )}
       >
-        <div className="flex items-center justify-around px-4">
-          {left.map((item) => (
-            <NavItem key={item.href} {...item} active={pathname === item.href} />
-          ))}
-          <Link
-            href="/add-money"
-            aria-label="Add money"
-            className="-mt-9 flex size-[60px] items-center justify-center rounded-full bg-brand text-ink shadow-[0_8px_24px_rgba(200,235,20,0.55)] ring-[6px] ring-white transition-transform active:scale-95"
-          >
-            <CenterGlyph />
-          </Link>
-          {right.map((item) => (
-            <NavItem key={item.href} {...item} active={pathname === item.href} />
+        <div className="flex items-center gap-1">
+          {sideItems.map((item) => (
+            <NavItem
+              key={item.href}
+              {...item}
+              active={isRouteActive(pathname, item.href)}
+            />
           ))}
         </div>
       </nav>
 
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[88px] flex-col bg-white px-3 py-6 shadow-[8px_0_24px_rgba(0,0,0,0.03)] md:flex lg:w-[232px] lg:px-4">
-        <Link href="/home" className="mb-8 flex items-center justify-center gap-2.5 lg:justify-start lg:px-2">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand text-ink">
+      {/* Desktop sidebar */}
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-40 hidden w-[76px] flex-col',
+          'border-r border-[var(--hs-border-light)]',
+          'bg-[var(--hs-primary-light)] px-2.5 py-5',
+          'md:flex lg:w-[220px] lg:px-3',
+        )}
+      >
+        <Link
+          href="/home"
+          className="mb-6 flex items-center justify-center gap-2 lg:justify-start lg:px-1"
+        >
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--hs-primary)] text-white">
             <CenterGlyph />
           </span>
-          <span className="hidden text-[16px] font-semibold tracking-tight text-ink lg:inline">Investly</span>
+
+          <span className="hidden text-[15px] font-semibold tracking-tight text-[var(--hs-text)] lg:inline">
+            Jama Saathi
+          </span>
         </Link>
-        <nav aria-label="Primary" className="flex flex-col gap-1.5">
+
+        <nav aria-label="Primary navigation" className="flex flex-col gap-1">
           {sideItems.map((item) => (
-            <SideItem key={item.href} {...item} active={pathname === item.href} />
+            <SideItem
+              key={item.href}
+              {...item}
+              active={isRouteActive(pathname, item.href)}
+            />
           ))}
         </nav>
+
         <Link
           href="/add-money"
-          aria-label="Add money"
-          className="mt-auto flex h-12 items-center justify-center gap-2 rounded-[14px] bg-brand text-[14px] font-medium text-ink shadow-[0_8px_24px_rgba(200,235,20,0.45)] transition-transform active:scale-95"
+          className={cn(
+            'mt-auto flex h-10 items-center justify-center gap-2 rounded-xl',
+            'bg-[var(--hs-primary)] text-[13px] font-medium text-white',
+            'transition-colors hover:bg-[var(--hs-primary-dark)]',
+            'lg:justify-start lg:px-3',
+          )}
         >
           <CenterGlyph />
-          <span className="hidden lg:inline">Add Money</span>
+          <span className="hidden lg:inline">Account Options</span>
         </Link>
       </aside>
     </>

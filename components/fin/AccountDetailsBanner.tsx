@@ -4,7 +4,7 @@ import Image from "next/image";
 export default function AccountDetailsBanner() {
   return (
     <div className="relative mt-3 h-[76px] overflow-hidden rounded-[14px] bg-gradient-to-r from-[#0c0a24] via-[#1d1450] to-[#4a2aa3] px-3.5 py-3.5 lg:mt-0">
-      <p className="text-[12px] font-semibold text-white">
+      <p className="text-[12px] font-semibold text-[var(--hs-primary-light)]">
         View Your Account Details
       </p>
 

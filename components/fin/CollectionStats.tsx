@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useRef, useState } from 'react'
@@ -33,8 +34,8 @@ export function CollectionStats({ summary }: Props) {
       value: summary.total_collection,
       subtitle: 'Your total recorded collection',
       icon: Wallet,
-      color: '#ffffff',
-      background: '#c9252d',
+      color: 'var(--hs-white)',
+      background: 'var(--hs-primary)',
       light: 'rgba(255,255,255,0.14)',
       prefix: '₹',
       isCount: false,
@@ -44,8 +45,8 @@ export function CollectionStats({ summary }: Props) {
       value: summary.total_accounts,
       subtitle: 'Accounts registered to you',
       icon: Landmark,
-      color: '#26364d',
-      background: '#ffffff',
+      color: 'var(--hs-text)',
+      background: 'var(--hs-white)',
       light: '#eaf0f8',
       isCount: true,
     },
@@ -55,7 +56,7 @@ export function CollectionStats({ summary }: Props) {
       subtitle: 'Payments awaiting approval',
       icon: Clock3,
       color: '#704d09',
-      background: '#fff8df',
+      background: 'var(--hs-accent-light)',
       light: '#ffedb2',
       isCount: false,
     },
@@ -65,7 +66,7 @@ export function CollectionStats({ summary }: Props) {
       subtitle: 'Payments approved and recorded',
       icon: CheckCircle2,
       color: '#17643c',
-      background: '#eaf7ef',
+      background: 'var(--hs-success-light)',
       light: '#d3efdd',
       isCount: false,
     },
@@ -89,17 +90,18 @@ export function CollectionStats({ summary }: Props) {
   return (
     <section className="w-full min-w-0">
       <div className="flex items-center gap-3">
-        {/* Previous arrow */}
+
         <button
           type="button"
           onClick={() => goTo(activeIndex - 1)}
           aria-label="Previous collection card"
-          className="flex size-9 shrink-0 items-center justify-center rounded-full border border-[#e4e7eb] bg-white text-ink shadow-sm transition-all hover:border-[#c9252d] hover:text-[#c9252d] active:scale-95"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full border bg-white text-ink shadow-sm transition-all hover:border-[var(--hs-primary)] hover:text-[var(--hs-primary)] active:scale-95"
+          style={{ borderColor: 'var(--hs-border)' }}
         >
           <ChevronLeft className="size-5" />
         </button>
 
-        {/* One card visible at a time */}
+
         <div className="min-w-0 flex-1 overflow-hidden">
           <div
             ref={scrollRef}
@@ -197,18 +199,18 @@ export function CollectionStats({ summary }: Props) {
           </div>
         </div>
 
-        {/* Next arrow */}
+
         <button
           type="button"
           onClick={() => goTo(activeIndex + 1)}
           aria-label="Next collection card"
-          className="flex size-9 shrink-0 items-center justify-center rounded-full border border-[#e4e7eb] bg-white text-ink shadow-sm transition-all hover:border-[#c9252d] hover:text-[#c9252d] active:scale-95"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full border bg-white text-ink shadow-sm transition-all hover:border-[var(--hs-primary)] hover:text-[var(--hs-primary)] active:scale-95"
+          style={{ borderColor: 'var(--hs-border)' }}
         >
           <ChevronRight className="size-5" />
         </button>
       </div>
 
-      {/* Slide indicators */}
       <div className="mt-3 flex items-center justify-center gap-2">
         {cards.map((card, index) => (
           <button
@@ -217,11 +219,15 @@ export function CollectionStats({ summary }: Props) {
             onClick={() => goTo(index)}
             aria-label={`Show ${card.title}`}
             aria-current={activeIndex === index ? 'true' : undefined}
-            className={`h-1.5 rounded-full transition-all duration-300 ${
-              activeIndex === index
-                ? 'w-6 bg-[#c9252d]'
+            className={`h-1.5 rounded-full transition-all duration-300 ${activeIndex === index
+                ? 'w-6'
                 : 'w-1.5 bg-[#d7dce2] hover:bg-[#aab2bd]'
-            }`}
+              }`}
+            style={
+              activeIndex === index
+                ? { backgroundColor: 'var(--hs-primary)' }
+                : undefined
+            }
           />
         ))}
       </div>
